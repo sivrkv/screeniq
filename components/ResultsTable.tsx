@@ -1,6 +1,6 @@
 'use client';
 
-import type { CandidateResult } from '@/lib/types';
+import type { CandidateResult, Recommendation } from '@/lib/types';
 
 interface ResultsTableProps {
   results: CandidateResult[];
@@ -36,6 +36,45 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
+function RecommendationBadge({ value }: { value: Recommendation }) {
+  const colorMap: Record<Recommendation, string> = {
+    'Strongly Recommend': 'bg-emerald-100 text-emerald-700',
+    Recommend: 'bg-teal-100 text-teal-700',
+    Consider: 'bg-amber-100 text-amber-700',
+    'Not Recommended': 'bg-red-100 text-red-700',
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${colorMap[value]}`}
+    >
+      {value}
+    </span>
+  );
+}
+
+function ExperienceBadge({
+  required,
+  found,
+  met,
+}: {
+  required: string;
+  found: string;
+  met: boolean;
+}) {
+  return (
+    <div className="space-y-1">
+      <span
+        className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
+          met ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+        }`}
+      >
+        {met ? '✓' : '✗'} {found} / {required}
+      </span>
+    </div>
+  );
+}
+
 function SkillTags({
   skills,
   variant,
@@ -63,6 +102,19 @@ function SkillTags({
         </span>
       ))}
     </div>
+  );
+}
+
+function BulletList({ items }: { items: string[] }) {
+  if (items.length === 0) {
+    return <span className="text-xs text-slate-400">None noted</span>;
+  }
+  return (
+    <ul className="list-inside list-disc space-y-0.5 text-xs text-slate-600">
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
   );
 }
 
@@ -107,19 +159,16 @@ export default function ResultsTable({
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50">
-              <th className="px-4 py-3 font-semibold text-slate-600">
-                Candidate
-              </th>
+              <th className="px-4 py-3 font-semibold text-slate-600">Candidate</th>
               <th className="px-4 py-3 font-semibold text-slate-600">Score</th>
-              <th className="px-4 py-3 font-semibold text-slate-600">
-                Matched Skills
-              </th>
-              <th className="px-4 py-3 font-semibold text-slate-600">
-                Missing Skills
-              </th>
-              <th className="px-4 py-3 font-semibold text-slate-600">
-                Summary
-              </th>
+              <th className="px-4 py-3 font-semibold text-slate-600">Recommendation</th>
+              <th className="px-4 py-3 font-semibold text-slate-600">Experience</th>
+              <th className="px-4 py-3 font-semibold text-slate-600">Matched Skills</th>
+              <th className="px-4 py-3 font-semibold text-slate-600">Missing Skills</th>
+              <th className="px-4 py-3 font-semibold text-slate-600">Education</th>
+              <th className="px-4 py-3 font-semibold text-slate-600">Strengths</th>
+              <th className="px-4 py-3 font-semibold text-slate-600">Concerns</th>
+              <th className="px-4 py-3 font-semibold text-slate-600">Summary</th>
             </tr>
           </thead>
           <tbody>
@@ -130,19 +179,13 @@ export default function ResultsTable({
               >
                 <td className="px-4 py-4">
                   <div className="font-medium text-slate-800">
-                    {result.success
-                      ? result.data?.candidateName
-                      : result.fileName}
+                    {result.success ? result.data?.candidateName : result.fileName}
                   </div>
                   {result.success && (
-                    <div className="mt-0.5 text-xs text-slate-400">
-                      {result.fileName}
-                    </div>
+                    <div className="mt-0.5 text-xs text-slate-400">{result.fileName}</div>
                   )}
                   {!result.success && result.error && (
-                    <div className="mt-1 text-xs text-red-600">
-                      {result.error}
-                    </div>
+                    <div className="mt-1 text-xs text-red-600">{result.error}</div>
                   )}
                 </td>
                 <td className="px-4 py-4">
@@ -157,9 +200,17 @@ export default function ResultsTable({
                 </td>
                 <td className="px-4 py-4">
                   {result.success && result.data ? (
-                    <SkillTags
-                      skills={result.data.matchedSkills}
-                      variant="matched"
+                    <RecommendationBadge value={result.data.recommendation} />
+                  ) : (
+                    <span className="text-xs text-slate-400">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-4">
+                  {result.success && result.data ? (
+                    <ExperienceBadge
+                      required={result.data.experienceRequired}
+                      found={result.data.experienceFound}
+                      met={result.data.experienceMet}
                     />
                   ) : (
                     <span className="text-xs text-slate-400">—</span>
@@ -167,20 +218,37 @@ export default function ResultsTable({
                 </td>
                 <td className="px-4 py-4">
                   {result.success && result.data ? (
-                    <SkillTags
-                      skills={result.data.missingMustHaveSkills}
-                      variant="missing"
-                    />
+                    <SkillTags skills={result.data.matchedSkills} variant="matched" />
+                  ) : (
+                    <span className="text-xs text-slate-400">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-4">
+                  {result.success && result.data ? (
+                    <SkillTags skills={result.data.missingMustHaveSkills} variant="missing" />
+                  ) : (
+                    <span className="text-xs text-slate-400">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-4 text-xs text-slate-600">
+                  {result.success && result.data ? result.data.education : '—'}
+                </td>
+                <td className="max-w-[180px] px-4 py-4">
+                  {result.success && result.data ? (
+                    <BulletList items={result.data.strengths} />
+                  ) : (
+                    <span className="text-xs text-slate-400">—</span>
+                  )}
+                </td>
+                <td className="max-w-[180px] px-4 py-4">
+                  {result.success && result.data ? (
+                    <BulletList items={result.data.concerns} />
                   ) : (
                     <span className="text-xs text-slate-400">—</span>
                   )}
                 </td>
                 <td className="max-w-xs px-4 py-4 text-slate-600">
-                  {result.success && result.data ? (
-                    result.data.summary
-                  ) : (
-                    <span className="text-xs text-slate-400">—</span>
-                  )}
+                  {result.success && result.data ? result.data.summary : '—'}
                 </td>
               </tr>
             ))}
@@ -197,15 +265,11 @@ export default function ResultsTable({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="font-semibold text-slate-800">
-                  {result.success
-                    ? result.data?.candidateName
-                    : result.fileName}
+                  {result.success ? result.data?.candidateName : result.fileName}
                 </h3>
                 <p className="text-xs text-slate-400">{result.fileName}</p>
               </div>
-              {result.success && result.data && (
-                <ScoreBadge score={result.data.matchScore} />
-              )}
+              {result.success && result.data && <ScoreBadge score={result.data.matchScore} />}
             </div>
 
             {result.success && result.data && (
@@ -214,32 +278,59 @@ export default function ResultsTable({
                   <ScoreBar score={result.data.matchScore} />
                 </div>
 
+                <div className="mt-3">
+                  <RecommendationBadge value={result.data.recommendation} />
+                </div>
+
                 <div className="mt-4 space-y-3">
+                  <div>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Experience
+                    </p>
+                    <ExperienceBadge
+                      required={result.data.experienceRequired}
+                      found={result.data.experienceFound}
+                      met={result.data.experienceMet}
+                    />
+                    <p className="mt-1 text-xs text-slate-600">
+                      {result.data.relevantExperience}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Education
+                    </p>
+                    <p className="text-xs text-slate-600">{result.data.education}</p>
+                  </div>
                   <div>
                     <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Matched Skills
                     </p>
-                    <SkillTags
-                      skills={result.data.matchedSkills}
-                      variant="matched"
-                    />
+                    <SkillTags skills={result.data.matchedSkills} variant="matched" />
                   </div>
                   <div>
                     <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Missing Skills
                     </p>
-                    <SkillTags
-                      skills={result.data.missingMustHaveSkills}
-                      variant="missing"
-                    />
+                    <SkillTags skills={result.data.missingMustHaveSkills} variant="missing" />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Strengths
+                    </p>
+                    <BulletList items={result.data.strengths} />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Concerns
+                    </p>
+                    <BulletList items={result.data.concerns} />
                   </div>
                   <div>
                     <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Summary
                     </p>
-                    <p className="text-sm text-slate-600">
-                      {result.data.summary}
-                    </p>
+                    <p className="text-sm text-slate-600">{result.data.summary}</p>
                   </div>
                 </div>
               </>
