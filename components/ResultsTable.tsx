@@ -155,8 +155,8 @@ export default function ResultsTable({
         )}
       </div>
 
-      <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft lg:block">
-        <table className="w-full text-left text-sm">
+      <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-soft lg:block">
+        <table className="w-full min-w-[1400px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50">
               <th className="px-4 py-3 font-semibold text-slate-600">Candidate</th>
