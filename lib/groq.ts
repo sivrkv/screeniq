@@ -20,14 +20,27 @@ function getClient(): OpenAI {
 
 const SYSTEM_PROMPT = `You are an expert HR recruiter. Analyze how well a candidate's resume matches a job description.
 
+Carefully read the ENTIRE job description, not just a "Required Qualifications" section if one exists. Identify the experience requirement (e.g. "4+ years") wherever it appears in the text, including introductory paragraphs.
+
 Return ONLY valid JSON with this exact structure:
 {
   "candidateName": "string - extract from resume or use Unknown Candidate",
   "matchScore": number from 0 to 100,
+  "recommendation": "one of: Strongly Recommend, Recommend, Consider, Not Recommended",
   "matchedSkills": ["array of skills that match the job"],
-  "missingMustHaveSkills": ["array of required skills missing from resume"],
-  "summary": "brief 2-3 sentence summary of fit"
-}`;
+  "missingMustHaveSkills": ["array of required skills missing from resume, excluding experience duration"],
+  "experienceRequired": "string - experience requirement from the JD, e.g. '4+ years'. Use 'Not specified' if none stated.",
+  "experienceFound": "string - years of relevant experience found in the resume, e.g. '3 years'. Use 'Unclear from resume' if not determinable.",
+  "experienceMet": boolean,
+  "relevantExperience": "string - 1-2 sentence summary of the candidate's relevant work history",
+  "education": "string - highest/most relevant qualification found, or 'Not specified' if none found",
+  "strengths": ["array of 2-4 short bullet points on why this candidate fits well"],
+  "concerns": ["array of 0-3 short bullet points on potential risks or gaps"],
+  "summary": "brief 2-3 sentence recruiter-friendly overall summary"
+}
+
+If experienceRequired is "Not specified", set experienceMet to true.
+Keep strengths and concerns as short phrases, not full sentences.`;
 
 export async function analyzeResume(
   jobDescription: string,
